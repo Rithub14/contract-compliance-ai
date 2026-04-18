@@ -98,8 +98,3 @@ tests/
 
 **Vendor:** Late Payment (2011/7/EU), GDPR DPA (Article 28), NIS2 (2022/2555), Product Liability, CSDDD supply chain due diligence (2024/1760), EU AI Act (2024/1689), Cyber Resilience Act, Data Act (2023/2854), Digital Services Act, Commercial Agents Directive
 
----
-
-## Going live
-
-Set real values in `.env` and flip `USE_MOCKS=false`. Each mock service has a comment at the top explaining exactly what to replace with the real SDK call.
