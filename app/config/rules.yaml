@@ -1,0 +1,200 @@
+employment:
+  white_collar:
+    # ── Core directives ───────────────────────────────────────────────────────
+    - id: transparent_terms
+      name: "Transparent & Predictable Working Conditions"
+      directive: "EU 2019/1152"
+      weight: 0.10
+      prompt: "Check probation ≤6 months, written statement of all required terms."
+
+    - id: working_time
+      name: "Working Time Directive"
+      directive: "2003/88/EC"
+      weight: 0.13
+      prompt: "Check max 48hr week, 11hr daily rest, 24hr weekly rest, 4 weeks annual leave."
+
+    - id: gdpr_employee
+      name: "Employee Data Protection (GDPR)"
+      directive: "EU 2016/679"
+      weight: 0.12
+      prompt: "Check lawful basis, data subject rights, retention limits, monitoring disclosure."
+
+    - id: equal_treatment
+      name: "Equal Treatment Framework"
+      directive: "2000/78/EC"
+      weight: 0.09
+      prompt: "Check non-discrimination on religion, disability, age, sexual orientation."
+
+    - id: minimum_wage
+      name: "Adequate Minimum Wage"
+      directive: "EU 2022/2041"
+      weight: 0.09
+      prompt: "Flag if salary appears below applicable national minimum wage threshold."
+
+    - id: termination_notice
+      name: "Collective Redundancy & Notice Periods"
+      directive: "98/59/EC"
+      weight: 0.09
+      prompt: "Check notice period, severance terms, consultation obligations."
+
+    # ── Additional major directives ───────────────────────────────────────────
+    - id: posted_workers
+      name: "Posted Workers"
+      directive: "96/71/EC"
+      weight: 0.07
+      prompt: "Check host-country minimum conditions for any cross-border posting arrangement."
+
+    - id: work_life_balance
+      name: "Work-Life Balance (Parental & Paternity Leave)"
+      directive: "EU 2019/1158"
+      weight: 0.09
+      prompt: "Check paternity leave ≥10 days, parental leave 4 months, carer's leave 5 days/year."
+
+    - id: whistleblower
+      name: "Whistleblower Protection"
+      directive: "EU 2019/1937"
+      weight: 0.07
+      prompt: "Check internal reporting channel and anti-retaliation clause for orgs >50 employees."
+
+    - id: race_equality
+      name: "Race Equality"
+      directive: "2000/43/EC"
+      weight: 0.08
+      prompt: "Check non-discrimination clause explicitly covers race and ethnic origin."
+
+    - id: fixed_term
+      name: "Fixed-Term & Part-Time Work"
+      directive: "1999/70/EC & 97/81/EC"
+      weight: 0.07
+      prompt: "Check objective justification for fixed-term; pro-rata principle for part-time."
+
+  blue_collar:
+    - id: transparent_terms
+      name: "Transparent & Predictable Working Conditions"
+      directive: "EU 2019/1152"
+      weight: 0.09
+      prompt: "Check probation ≤6 months, advance schedule notice for shift workers."
+
+    - id: working_time
+      name: "Working Time Directive (Shift / Manual Worker)"
+      directive: "2003/88/EC"
+      weight: 0.15
+      collar_note: "Stricter rest period rules for shift and manual workers."
+      prompt: "Check 48hr weekly cap, 11hr daily rest, 24hr weekly rest, shift scheduling conflicts."
+
+    - id: gdpr_employee
+      name: "Employee Data Protection (GDPR)"
+      directive: "EU 2016/679"
+      weight: 0.11
+      prompt: "Check lawful basis, data subject rights, retention limits, monitoring disclosure."
+
+    - id: equal_treatment
+      name: "Equal Treatment Framework"
+      directive: "2000/78/EC"
+      weight: 0.08
+      prompt: "Check non-discrimination on religion, disability, age, sexual orientation."
+
+    - id: minimum_wage
+      name: "Adequate Minimum Wage"
+      directive: "EU 2022/2041"
+      weight: 0.10
+      prompt: "Flag if hourly rate or salary appears below applicable national minimum wage."
+
+    - id: termination_notice
+      name: "Collective Redundancy & Notice Periods"
+      directive: "98/59/EC"
+      weight: 0.08
+      prompt: "Check notice period, severance terms, consultation obligations."
+
+    - id: posted_workers
+      name: "Posted Workers"
+      directive: "96/71/EC"
+      weight: 0.08
+      prompt: "Check host-country minimum conditions for cross-border posting."
+
+    - id: work_life_balance
+      name: "Work-Life Balance (Parental & Paternity Leave)"
+      directive: "EU 2019/1158"
+      weight: 0.10
+      prompt: "Check paternity leave ≥10 days, parental leave 4 months, carer's leave."
+
+    - id: whistleblower
+      name: "Whistleblower Protection"
+      directive: "EU 2019/1937"
+      weight: 0.07
+      prompt: "Check internal reporting channel and anti-retaliation clause."
+
+    - id: race_equality
+      name: "Race Equality"
+      directive: "2000/43/EC"
+      weight: 0.08
+      prompt: "Check non-discrimination clause explicitly covers race and ethnic origin."
+
+    - id: fixed_term
+      name: "Fixed-Term & Part-Time Work"
+      directive: "1999/70/EC & 97/81/EC"
+      weight: 0.06
+      prompt: "Check objective justification for fixed-term; pro-rata principle for part-time."
+
+vendor:
+  # ── Core directives ─────────────────────────────────────────────────────────
+  - id: late_payment
+    name: "Late Payment Directive"
+    directive: "2011/7/EU"
+    weight: 0.12
+    prompt: "Check payment terms ≤30 days (public) / ≤60 days (commercial), statutory interest."
+
+  - id: gdpr_vendor
+    name: "GDPR — Data Processing Agreement"
+    directive: "EU 2016/679"
+    weight: 0.16
+    prompt: "Check DPA, sub-processor controls, SCCs, data subject rights per Article 28."
+
+  - id: nis2
+    name: "Cybersecurity Obligations (NIS2)"
+    directive: "EU 2022/2555"
+    weight: 0.12
+    prompt: "Check cybersecurity measures, 72-hour incident reporting timeline."
+
+  - id: product_liability
+    name: "Product Liability"
+    directive: "85/374/EEC"
+    weight: 0.10
+    prompt: "Check liability cap, defect definitions, misconduct carve-outs per 2024 update."
+
+  - id: csddd
+    name: "Supply Chain Due Diligence (CSDDD)"
+    directive: "EU 2024/1760"
+    weight: 0.13
+    prompt: "Check human rights and environmental due diligence, audit rights, remediation."
+
+  # ── Additional major directives ─────────────────────────────────────────────
+  - id: ai_act
+    name: "EU AI Act"
+    directive: "EU 2024/1689"
+    weight: 0.12
+    prompt: "Check AI risk classification, transparency obligations, human oversight, prohibited practices."
+
+  - id: cyber_resilience
+    name: "Cyber Resilience Act"
+    directive: "EU 2024/2847"
+    weight: 0.08
+    prompt: "Check security update lifecycle, vulnerability disclosure for products with digital elements."
+
+  - id: data_act
+    name: "Data Act"
+    directive: "EU 2023/2854"
+    weight: 0.07
+    prompt: "Check data portability, access rights, cloud switching provisions."
+
+  - id: dsa
+    name: "Digital Services Act"
+    directive: "EU 2022/2065"
+    weight: 0.06
+    prompt: "Check content moderation, transparency, and user rights for intermediary services."
+
+  - id: commercial_agents
+    name: "Commercial Agents Directive"
+    directive: "86/653/EEC"
+    weight: 0.04
+    prompt: "Check agent commission rights and termination indemnity/goodwill compensation."
