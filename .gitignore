@@ -1,0 +1,39 @@
+# PRD (keep local only)
+PRD_EU_Contract_Compliance_Checker.md
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.egg
+
+# Streamlit
+.streamlit/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.backup
+infra/.terraform.lock.hcl
+infra/environments/*.tfvars
+
+# Docker
+*.log
