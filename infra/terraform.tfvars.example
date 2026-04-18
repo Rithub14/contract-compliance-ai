@@ -1,0 +1,4 @@
+app_name            = "contract-compliance"
+location            = "westeurope"
+resource_group_name = "rg-contract-compliance"
+acr_sku             = "Basic"
