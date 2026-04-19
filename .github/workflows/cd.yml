@@ -1,8 +1,7 @@
 name: CD
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:  # manual only — Render handles auto-deploy from GitHub
 
 env:
   API_IMAGE: ${{ secrets.ACR_LOGIN_SERVER }}/contract-compliance-api
