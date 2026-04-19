@@ -18,8 +18,8 @@ langchain-core==0.3.84
 pyyaml==6.0.1
 pypdf==4.2.0
 
-# Retrieval (custom rules semantic similarity)
-sentence-transformers==3.0.1
+# Retrieval (custom rules semantic similarity — ONNX-based, no PyTorch)
+fastembed>=0.3.6
 
 # UI
 streamlit==1.35.0

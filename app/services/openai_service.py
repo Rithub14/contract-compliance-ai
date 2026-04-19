@@ -1,8 +1,8 @@
 import asyncio
 import re
 
-from sentence_transformers import SentenceTransformer
-from sentence_transformers import util as st_util
+import numpy as np
+from fastembed import TextEmbedding
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -843,16 +843,22 @@ _ANALYZERS = {
 
 
 # ── Semantic similarity custom-rule checker ───────────────────────────────────
+# Uses fastembed (ONNX runtime) instead of sentence-transformers (PyTorch)
+# to keep memory well under Render's 512 MB free-tier limit.
 
-_embedding_model: SentenceTransformer | None = None
+_embedding_model: TextEmbedding | None = None
 
 
-def _get_embedding_model() -> SentenceTransformer:
+def _get_embedding_model() -> TextEmbedding:
     global _embedding_model
     if _embedding_model is None:
-        # Downloaded once to ~/.cache/huggingface on first use (~90 MB)
-        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+        # BAAI/bge-small-en-v1.5 — ~130 MB download, cached after first run
+        _embedding_model = TextEmbedding("BAAI/bge-small-en-v1.5")
     return _embedding_model
+
+
+def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-10))
 
 
 def _check_with_embeddings(rule: dict, clauses: list[dict]) -> dict:
@@ -869,12 +875,13 @@ def _check_with_embeddings(rule: dict, clauses: list[dict]) -> dict:
     rule_text = rule.get("prompt", rule.get("name", ""))
     clause_texts = [c.get("text", "") for c in clauses]
 
-    rule_emb = model.encode(rule_text, convert_to_tensor=True, show_progress_bar=False)
-    clause_embs = model.encode(clause_texts, convert_to_tensor=True, show_progress_bar=False)
-    scores = st_util.cos_sim(rule_emb, clause_embs)[0]
+    all_embeddings = list(model.embed([rule_text] + clause_texts))
+    rule_emb = all_embeddings[0]
+    clause_embs = all_embeddings[1:]
 
-    best_idx = int(scores.argmax())
-    best_score = float(scores[best_idx])
+    scores = [_cosine_sim(rule_emb, ce) for ce in clause_embs]
+    best_idx = int(max(range(len(scores)), key=lambda i: scores[i]))
+    best_score = scores[best_idx]
     best_clause = clauses[best_idx]
     excerpt = best_clause.get("text", "")[:300].strip() or "N/A"
     matched_title = best_clause.get("title", best_clause.get("clause_id", ""))
