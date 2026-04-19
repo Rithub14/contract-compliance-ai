@@ -1,7 +1,10 @@
-name: CD
+name: CD — Azure Container Apps (manual)
+# Production deployment pipeline for Azure Container Apps + ACR.
+# Trigger manually once Azure infrastructure is provisioned via infra/main.tf.
+# Day-to-day deploys are handled automatically by Render (render.yaml).
 
 on:
-  workflow_dispatch:  # manual only — Render handles auto-deploy from GitHub
+  workflow_dispatch:
 
 env:
   API_IMAGE: ${{ secrets.ACR_LOGIN_SERVER }}/contract-compliance-api
