@@ -1,5 +1,4 @@
 import asyncio
-import re
 
 
 def _evaluate_sync(rule: dict, finding: dict) -> dict:
