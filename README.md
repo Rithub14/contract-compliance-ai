@@ -31,6 +31,14 @@ Built as a GenAI/MLOps portfolio project. Everything runs locally with mocks; sw
 
 ---
 
+## Deployment
+
+The app is deployed on **Render** (live demo via `render.yaml`). Both the API and UI are separate web services that Render builds from the Dockerfiles and redeploys automatically on every push to `main`.
+
+For production-grade deployment, the `infra/` directory contains full **Terraform** configs that provision the same setup on **Azure Container Apps** — ACR, Storage Account, Key Vault, Log Analytics, and both container apps. The GitHub Actions workflow at `.github/workflows/cd.yml` handles building, pushing to ACR, and deploying to Container Apps. That pipeline is set to manual trigger since Render handles the live demo, but it's ready to run against a real Azure subscription.
+
+---
+
 ## Running locally
 
 **Requirements:** Python 3.11, Docker (optional)
