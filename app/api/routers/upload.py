@@ -6,11 +6,11 @@ import pypdf
 
 from app.api.job_store import job_store
 from app.api.models import UploadResponse
-from app.services.blob_service import MockBlobService
+from app.services.blob_service import BlobService
 from app.services.custom_rules_service import parse_compliance_doc
 
 router = APIRouter()
-_blob = MockBlobService()
+_blob = BlobService()
 
 _ALLOWED_TYPES = {
     "application/pdf",
