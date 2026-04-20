@@ -7,8 +7,8 @@ services:
     plan: free
     healthCheckPath: /health
     envVars:
-      - key: USE_MOCKS
-        value: "true"
+      - key: OPENAI_API_KEY
+        sync: false
 
   - type: web
     name: contract-compliance-ui

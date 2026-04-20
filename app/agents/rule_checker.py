@@ -3,16 +3,14 @@ import time
 
 from langchain_core.runnables import RunnableConfig
 
-from app.services.openai_service import MockOpenAIService
-from app.services.judge_service import MockJudgeService
+from app.services.openai_service import OpenAIService
+from app.services.judge_service import evaluate as judge_evaluate
 from app.observability.langfuse_tracer import tracer
 
-_openai = MockOpenAIService()
-_judge = MockJudgeService()
+_openai = OpenAIService()
 
 
 async def rule_checker_node(state: dict, config: RunnableConfig) -> dict:
-    """Checks one EU rule against extracted clauses and streams the result to the SSE queue."""
     rule: dict = state["rule"]
     clauses: list[dict] = state.get("clauses", [])
     cfg = config.get("configurable", {})
@@ -21,7 +19,7 @@ async def rule_checker_node(state: dict, config: RunnableConfig) -> dict:
     result = await _openai.check_rule(rule, clauses)
     latency_ms = (time.monotonic() - t0) * 1000
 
-    evaluation = await _judge.evaluate(rule, clauses, result)
+    evaluation = await judge_evaluate(rule, result)
     result["evaluation"] = evaluation
 
     trace_id: str = cfg.get("trace_id", state.get("job_id", "unknown"))
@@ -31,6 +29,10 @@ async def rule_checker_node(state: dict, config: RunnableConfig) -> dict:
         input_data={"rule_id": rule["id"], "clause_count": len(clauses)},
         output={"status": result["status"], "severity": result.get("severity")},
         latency_ms=latency_ms,
+        tokens={
+            "prompt": result.pop("prompt_tokens", 0),
+            "completion": result.pop("completion_tokens", 0),
+        },
     )
     tracer.score(trace_id, f"accuracy.{rule['id']}", evaluation["accuracy_score"])
     tracer.score(trace_id, f"completeness.{rule['id']}", evaluation["completeness_score"])
