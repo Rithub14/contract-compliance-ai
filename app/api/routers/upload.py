@@ -1,11 +1,15 @@
+import base64
 import io
 import uuid
 
+import fitz  # PyMuPDF
 from fastapi import APIRouter, HTTPException, UploadFile, File
+from openai import AsyncOpenAI
 import pypdf
 
 from app.api.job_store import job_store
 from app.api.models import UploadResponse
+from app.config.settings import settings
 from app.services.blob_service import BlobService
 from app.services.custom_rules_service import parse_compliance_doc
 
@@ -18,12 +22,52 @@ _ALLOWED_TYPES = {
     "text/plain",
 }
 _MAX_BYTES = 20 * 1024 * 1024  # 20 MB
+_MIN_TEXT_CHARS = 200  # below this, assume scanned PDF and use vision OCR
+_MAX_OCR_PAGES = 20
 
 
-def _extract_text(content: bytes, content_type: str) -> str:
+async def _ocr_pdf_with_vision(content: bytes) -> str:
+    doc = fitz.open(stream=content, filetype="pdf")
+    image_parts: list[dict] = []
+    for i, page in enumerate(doc):
+        if i >= _MAX_OCR_PAGES:
+            break
+        pix = page.get_pixmap(dpi=150)
+        b64 = base64.b64encode(pix.tobytes("png")).decode()
+        image_parts.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "high"},
+        })
+
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    response = await client.chat.completions.create(
+        model=settings.openai_model,
+        messages=[{
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": (
+                        "Extract all text from these contract pages verbatim. "
+                        "Preserve paragraph breaks and section headings. "
+                        "Output only the extracted text, nothing else."
+                    ),
+                },
+                *image_parts,
+            ],
+        }],
+        max_tokens=8192,
+    )
+    return response.choices[0].message.content or ""
+
+
+async def _extract_text(content: bytes, content_type: str) -> str:
     if content_type == "application/pdf":
         reader = pypdf.PdfReader(io.BytesIO(content))
-        return "\n\n".join(page.extract_text() or "" for page in reader.pages)
+        text = "\n\n".join(page.extract_text() or "" for page in reader.pages)
+        if len(text.strip()) < _MIN_TEXT_CHARS:
+            text = await _ocr_pdf_with_vision(content)
+        return text
     return content.decode(errors="replace")
 
 
@@ -46,7 +90,7 @@ async def upload_contract(
 
     job_id = str(uuid.uuid4())
     blob_url = await _blob.upload(job_id, file.filename or "contract", content)
-    raw_text = _extract_text(content, file.content_type or "")
+    raw_text = await _extract_text(content, file.content_type or "")
 
     job_store[job_id] = {
         "job_id": job_id,
