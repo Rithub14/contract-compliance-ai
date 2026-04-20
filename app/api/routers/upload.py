@@ -36,10 +36,10 @@ async def _ocr_pdf_with_vision(content: bytes) -> str:
         b64 = base64.b64encode(pix.tobytes("png")).decode()
         image_parts.append({
             "type": "image_url",
-            "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "high"},
+            "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "auto"},
         })
 
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    client = AsyncOpenAI(api_key=settings.openai_api_key, max_retries=6)
     response = await client.chat.completions.create(
         model=settings.openai_model,
         messages=[{
