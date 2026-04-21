@@ -1,5 +1,6 @@
 import io
 import logging
+import os
 import platform
 import uuid
 
@@ -26,7 +27,8 @@ _MAX_BYTES = 20 * 1024 * 1024
 _MIN_TEXT_CHARS = 200
 _MAX_OCR_PAGES = 20
 
-_IS_MACOS = platform.system() == "Darwin"
+# OCR_ENGINE=rapidocr forces RapidOCR even on macOS (useful for local testing)
+_USE_APPLE_VISION = platform.system() == "Darwin" and os.getenv("OCR_ENGINE", "auto") != "rapidocr"
 
 
 def _extract_pdf_text_direct(content: bytes) -> str:
@@ -41,7 +43,7 @@ def _ocr_pdf(content: bytes) -> str:
         if i >= _MAX_OCR_PAGES:
             break
         pix = page.get_pixmap(dpi=200)
-        if _IS_MACOS:
+        if _USE_APPLE_VISION:
             from ocrmac import ocrmac
             img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             annotations = ocrmac.OCR(img, language_preference=["de-DE", "en-US"]).recognize()
