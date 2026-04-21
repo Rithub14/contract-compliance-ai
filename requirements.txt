@@ -15,9 +15,9 @@ langchain-core==0.3.84
 
 pyyaml==6.0.1
 PyMuPDF>=1.24.0
-
-docling>=2.5.0
+pypdfium2>=5.0.0
 pypdf>=4.0.0
+rapidocr>=3.0.0
 
 fastembed>=0.3.6
 
