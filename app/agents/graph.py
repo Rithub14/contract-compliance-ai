@@ -11,7 +11,6 @@ from app.agents.metadata_extractor import metadata_extractor_node
 from app.agents.rule_checker import rule_checker_node
 from app.agents.scorer import scorer_node
 from app.agents.report_writer import report_writer_node
-from app.observability.langfuse_tracer import tracer
 
 
 class ReviewState(TypedDict):
@@ -85,21 +84,10 @@ async def run_graph(job_id: str, raw_text: str, queue: asyncio.Queue, custom_rul
         "report": {},
     }
 
-    trace_id = tracer.trace(
-        name="contract_compliance_review",
-        input_data={"job_id": job_id, "text_length": len(raw_text)},
-    )
-    config = {"configurable": {"queue": queue, "trace_id": trace_id}}
+    config = {"configurable": {"queue": queue}}
 
     try:
         final_state = await compiled_graph.ainvoke(initial_state, config=config)
-
-        tracer.score(trace_id, "overall_compliance_score", final_state["overall_score"] / 100)
-        risk_numeric = {"Low": 0.9, "Medium": 0.6, "High": 0.3, "Critical": 0.1}.get(
-            final_state["risk_level"], 0.5
-        )
-        tracer.score(trace_id, "risk_level_numeric", risk_numeric)
-        tracer.flush()
 
         await queue.put(
             {

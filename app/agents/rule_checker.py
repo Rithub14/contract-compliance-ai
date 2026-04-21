@@ -1,14 +1,11 @@
 import asyncio
-import time
 
 from langchain_core.runnables import RunnableConfig
 
 from app.services.openai_service import OpenAIService
 from app.services.judge_service import evaluate as judge_evaluate
-from app.observability.langfuse_tracer import tracer
 
 _openai = OpenAIService()
-
 
 _STATUTORY_CATEGORIES = {"STATUTORY", "ORGANISATIONAL"}
 
@@ -59,10 +56,8 @@ async def rule_checker_node(state: dict, config: RunnableConfig) -> dict:
 
     metadata: dict = state.get("contract_metadata", {})
 
-    t0 = time.monotonic()
     result = await _openai.check_rule(rule, clauses, metadata=metadata)
     result = _enforce_evidence_rule(result, rule)
-    latency_ms = (time.monotonic() - t0) * 1000
 
     if result.get("is_system_error"):
         queue: asyncio.Queue | None = cfg.get("queue")
@@ -72,21 +67,8 @@ async def rule_checker_node(state: dict, config: RunnableConfig) -> dict:
 
     evaluation = await judge_evaluate(rule, result)
     result["evaluation"] = evaluation
-
-    trace_id: str = cfg.get("trace_id", state.get("job_id", "unknown"))
-    tracer.span(
-        trace_id,
-        name=f"rule_checker.{rule['id']}",
-        input_data={"rule_id": rule["id"], "clause_count": len(clauses)},
-        output={"status": result["status"], "severity": result.get("severity")},
-        latency_ms=latency_ms,
-        tokens={
-            "prompt": result.pop("prompt_tokens", 0),
-            "completion": result.pop("completion_tokens", 0),
-        },
-    )
-    tracer.score(trace_id, f"accuracy.{rule['id']}", evaluation["accuracy_score"])
-    tracer.score(trace_id, f"completeness.{rule['id']}", evaluation["completeness_score"])
+    result.pop("prompt_tokens", None)
+    result.pop("completion_tokens", None)
 
     queue = cfg.get("queue")
     if queue is not None:

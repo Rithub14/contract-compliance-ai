@@ -9,13 +9,11 @@ from PIL import Image
 
 from app.api.job_store import job_store
 from app.api.models import UploadResponse
-from app.services.blob_service import BlobService
 from app.services.custom_rules_service import parse_compliance_doc
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-_blob = BlobService()
 
 _ALLOWED_TYPES = {
     "application/pdf",
@@ -73,13 +71,11 @@ async def upload_contract(
         custom_rules = parse_compliance_doc(compliance_content, compliance_file.content_type or "text/plain")
 
     job_id = str(uuid.uuid4())
-    blob_url = await _blob.upload(job_id, file.filename or "contract", content)
     raw_text = await _extract_text(content, file.content_type or "")
 
     job_store[job_id] = {
         "job_id": job_id,
         "filename": file.filename,
-        "blob_url": blob_url,
         "raw_text": raw_text,
         "custom_rules": custom_rules,
         "status": "queued",
