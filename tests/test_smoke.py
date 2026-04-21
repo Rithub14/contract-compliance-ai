@@ -9,7 +9,7 @@ def _mock_heavy(name: str) -> None:
 
 
 # Stub platform-specific / heavy deps not available in CI
-for _mod in ("fitz", "pypdfium2", "ocrmac", "ocrmac.ocrmac", "rapidocr", "PIL", "PIL.Image",
+for _mod in ("fitz", "pypdfium2", "ocrmac", "ocrmac.ocrmac", "PIL", "PIL.Image",
              "fastembed", "numpy"):
     _mock_heavy(_mod)
 

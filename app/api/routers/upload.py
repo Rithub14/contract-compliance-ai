@@ -1,11 +1,9 @@
 import io
 import logging
-import os
 import platform
 import uuid
 
 import fitz
-import numpy as np
 import pypdfium2 as pdfium
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from PIL import Image
@@ -27,9 +25,6 @@ _MAX_BYTES = 20 * 1024 * 1024
 _MIN_TEXT_CHARS = 200
 _MAX_OCR_PAGES = 20
 
-# OCR_ENGINE=rapidocr forces RapidOCR even on macOS (useful for local testing)
-_USE_APPLE_VISION = platform.system() == "Darwin" and os.getenv("OCR_ENGINE", "auto") != "rapidocr"
-
 
 def _extract_pdf_text_direct(content: bytes) -> str:
     doc = pdfium.PdfDocument(content)
@@ -37,23 +32,23 @@ def _extract_pdf_text_direct(content: bytes) -> str:
 
 
 def _ocr_pdf(content: bytes) -> str:
+    if platform.system() != "Darwin":
+        raise HTTPException(
+            status_code=422,
+            detail="Scanned PDF OCR requires macOS Apple Vision. Upload a digital PDF, DOCX, or TXT file.",
+        )
+
+    from ocrmac import ocrmac
+
     doc = fitz.open(stream=content, filetype="pdf")
     pages_text = []
     for i, page in enumerate(doc):
         if i >= _MAX_OCR_PAGES:
             break
         pix = page.get_pixmap(dpi=200)
-        if _USE_APPLE_VISION:
-            from ocrmac import ocrmac
-            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-            annotations = ocrmac.OCR(img, language_preference=["de-DE", "en-US"]).recognize()
-            page_text = "\n".join(item[0] for item in annotations)
-        else:
-            from rapidocr import RapidOCR
-            engine = RapidOCR()
-            img_array = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, 3)
-            result, _ = engine(img_array)
-            page_text = "\n".join(item[1] for item in result) if result else ""
+        img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+        annotations = ocrmac.OCR(img, language_preference=["de-DE", "en-US"]).recognize()
+        page_text = "\n".join(item[0] for item in annotations)
         pages_text.append(page_text)
         logger.debug("ocr page %d: %d chars", i + 1, len(page_text))
     return "\n\n".join(pages_text)

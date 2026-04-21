@@ -24,7 +24,7 @@ Upload an employment or vendor contract and get a clause-by-clause compliance re
 | LLM | OpenAI gpt-4o-mini |
 | API | FastAPI + sse-starlette (SSE streaming) |
 | UI | Streamlit |
-| OCR | pypdfium2 (digital PDFs) → Apple Vision/ocrmac on macOS, RapidOCR on Linux (scanned PDFs) |
+| OCR | pypdfium2 (digital PDFs) → Apple Vision/ocrmac on macOS (scanned PDFs) |
 | Document parsing | Regex clause splitter (§-based + paragraph fallback) |
 | Semantic matching | fastembed BAAI/bge-small-en-v1.5 (custom rules only) |
 | Deployment | Render (render.yaml) |
@@ -33,7 +33,7 @@ Upload an employment or vendor contract and get a clause-by-clause compliance re
 
 ## Running locally
 
-**Requirements:** Python 3.11+, Docker (optional). Apple Vision OCR (macOS) gives the best results for German scanned PDFs; RapidOCR is used automatically on Linux.
+**Requirements:** Python 3.11+, Docker (optional). Apple Vision OCR for scanned PDFs requires macOS; digital PDFs, DOCX, and TXT work cross-platform.
 
 ```bash
 git clone https://github.com/Rithub14/contract-compliance-ai.git
