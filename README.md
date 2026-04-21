@@ -27,7 +27,7 @@ Upload an employment or vendor contract and get a clause-by-clause compliance re
 | OCR | pypdfium2 (digital PDFs) → Apple Vision/ocrmac on macOS (scanned PDFs) |
 | Document parsing | Regex clause splitter (§-based + paragraph fallback) |
 | Semantic matching | fastembed BAAI/bge-small-en-v1.5 (custom rules only) |
-| Deployment | Render (render.yaml) |
+| Containerization | Docker + Docker Compose |
 
 ---
 
