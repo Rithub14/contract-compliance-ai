@@ -1,4 +1,11 @@
-_STATUS_WEIGHTS = {"PASS": 1.0, "WARNING": 0.5, "FAIL": 0.0}
+_EXCLUDED_STATUSES = {"NOT_APPLICABLE", "ERROR"}
+
+_STATUS_WEIGHTS = {
+    "PASS": 1.0,
+    "WARNING": 0.5,
+    "UNCERTAIN": 0.75,
+    "FAIL": 0.0,
+}
 
 _RISK_BANDS = [
     (80, "Low"),
@@ -9,7 +16,6 @@ _RISK_BANDS = [
 
 
 async def scorer_node(state: dict) -> dict:
-    """Computes a weighted compliance score from all rule results."""
     rule_results: list[dict] = state.get("rule_results", [])
     active_rules: list[dict] = state.get("active_rules", [])
 
@@ -19,8 +25,18 @@ async def scorer_node(state: dict) -> dict:
     weighted_score = 0.0
 
     for result in rule_results:
+        status = result.get("status", "")
+
+        if status in _EXCLUDED_STATUSES:
+            continue
+
         w = weight_map.get(result["rule_id"], 1.0)
-        s = _STATUS_WEIGHTS.get(result["status"], 0.0)
+
+        fp_risk = result.get("evaluation", {}).get("false_positive_risk", "")
+        if fp_risk == "high":
+            w *= 0.5
+
+        s = _STATUS_WEIGHTS.get(status, 0.0)
         weighted_score += w * s
         total_weight += w
 

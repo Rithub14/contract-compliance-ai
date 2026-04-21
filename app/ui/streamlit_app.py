@@ -7,7 +7,7 @@ import streamlit as st
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 
 st.set_page_config(
-    page_title="EU Contract Compliance Checker",
+    page_title="German Contract Compliance Checker",
     page_icon="⚖️",
     layout="wide",
 )
@@ -31,12 +31,12 @@ with st.sidebar:
         "Upload your compliance rules (PDF or TXT)",
         type=["pdf", "txt"],
         key="compliance_uploader",
-        help="Optional. If uploaded, only these rules will be checked instead of the default EU ruleset.",
+        help="Optional. If uploaded, only these rules will be checked instead of the default German ruleset.",
     )
     if compliance_file:
         st.success(f"Custom rules ready: **{compliance_file.name}**")
     else:
-        st.caption("No custom rules uploaded — default EU compliance rules will be used.")
+        st.caption("No custom rules uploaded — default German compliance rules will be used.")
 
     st.divider()
     st.header("Review History")
@@ -59,8 +59,8 @@ with st.sidebar:
         st.caption("No reviews yet this session.")
 
 # ── Main content ─────────────────────────────────────────────────────────────
-st.title("EU Contract Compliance Checker")
-st.caption("Multi-agent AI pipeline • LangGraph • Azure OpenAI")
+st.title("German Contract Compliance Checker")
+st.caption("Multi-agent AI pipeline • LangGraph • OpenAI")
 
 uploaded_file = st.file_uploader(
     "Upload a contract (PDF, DOCX, or TXT — max 20 MB)",
@@ -70,15 +70,40 @@ uploaded_file = st.file_uploader(
 
 def _render_rule_card(card: dict):
     status = card.get("status", "PASS")
-    color = {"PASS": "green", "FAIL": "red", "WARNING": "orange"}.get(status, "grey")
+    color = {
+        "PASS": "green",
+        "FAIL": "red",
+        "WARNING": "orange",
+        "UNCERTAIN": "blue",
+        "NOT_APPLICABLE": "grey",
+        "ERROR": "grey",
+    }.get(status, "grey")
     severity = card.get("severity", "")
+    category = card.get("category", "")
+
+    category_badge = f" &nbsp; _{category}_" if category else ""
     st.markdown(
         f"**:{color}[{status}]** &nbsp; `{card['directive']}` &nbsp; "
-        f"**{card['rule_name']}** &nbsp; _{severity} severity_"
+        f"**{card['rule_name']}** &nbsp; _{severity} severity_{category_badge}"
     )
+
+    if status == "NOT_APPLICABLE":
+        st.caption(f"_{card.get('finding', 'Rule not applicable to this contract.')}_")
+        st.divider()
+        return
+
+    if status == "ERROR":
+        st.caption("_System error — this rule could not be evaluated. It has been excluded from scoring._")
+        st.divider()
+        return
+
     st.markdown(f"> {card['finding']}")
     with st.expander("Evidence excerpt, recommendation & evaluation"):
-        st.markdown(f"*Excerpt:* {card['excerpt']}")
+        excerpt = card.get("excerpt", "N/A")
+        if excerpt and excerpt.strip() not in ("N/A", ""):
+            st.markdown(f"*Excerpt:* `{excerpt}`")
+        else:
+            st.warning("No supporting excerpt found in contract text.")
         st.markdown(f"*Recommendation:* {card['recommendation']}")
 
         ev = card.get("evaluation")
@@ -122,7 +147,7 @@ if uploaded_file and st.button("Run Compliance Review", type="primary"):
             resp = httpx.post(
                 f"{API_BASE_URL}/upload",
                 files=upload_files,
-                timeout=30,
+                timeout=120,
             )
             resp.raise_for_status()
         except httpx.HTTPError as exc:
@@ -136,7 +161,7 @@ if uploaded_file and st.button("Run Compliance Review", type="primary"):
     if custom_count:
         st.success(f"Uploaded — job ID: `{job_id}` — using **{custom_count} custom rules**")
     else:
-        st.success(f"Uploaded — job ID: `{job_id}` — using default EU compliance rules")
+        st.success(f"Uploaded — job ID: `{job_id}` — using default German compliance rules")
 
     # ── Step 2: Stream rule results ───────────────────────────────────────
     st.subheader("Live Compliance Results")

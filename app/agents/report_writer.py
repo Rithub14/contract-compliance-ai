@@ -1,5 +1,4 @@
 async def report_writer_node(state: dict) -> dict:
-    """Synthesises an executive summary from all rule results (mock implementation)."""
     rule_results: list[dict] = state.get("rule_results", [])
     overall_score: float = state.get("overall_score", 0.0)
     risk_level: str = state.get("risk_level", "Unknown")
@@ -17,7 +16,6 @@ async def report_writer_node(state: dict) -> dict:
         directives = ", ".join(r["directive"] for r in failed)
         summary_lines.append(f"Critical issues found under: {directives}.")
 
-    # ── Judge evaluation summary ──────────────────────────────────────────────
     evals = [r["evaluation"] for r in rule_results if "evaluation" in r]
     judge_summary: dict = {}
     if evals:

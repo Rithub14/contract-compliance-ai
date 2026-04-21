@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routers import upload, review, report
+from app.api.routers import review, report, upload
 
 app = FastAPI(
-    title="EU Contract Compliance Checker",
-    description="Multi-agent AI pipeline for real-time EU regulatory compliance review.",
+    title="German Contract Compliance Checker",
+    description="Multi-agent AI pipeline for real-time German regulatory compliance review.",
     version="0.1.0",
 )
 

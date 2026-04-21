@@ -7,6 +7,7 @@ from langgraph.types import Send
 
 from app.agents.classifier import classifier_node
 from app.agents.extractor import extractor_node
+from app.agents.metadata_extractor import metadata_extractor_node
 from app.agents.rule_checker import rule_checker_node
 from app.agents.scorer import scorer_node
 from app.agents.report_writer import report_writer_node
@@ -21,6 +22,7 @@ class ReviewState(TypedDict):
     clauses: list[dict]
     custom_rules: list[dict]
     active_rules: list[dict]
+    contract_metadata: dict
     rule_results: Annotated[list[dict], operator.add]
     overall_score: float
     risk_level: str
@@ -28,7 +30,6 @@ class ReviewState(TypedDict):
 
 
 def _route_rule_checkers(state: ReviewState) -> list[Send]:
-    """Fan out one check_rule node per active rule."""
     return [
         Send(
             "check_rule",
@@ -36,6 +37,7 @@ def _route_rule_checkers(state: ReviewState) -> list[Send]:
                 "job_id": state["job_id"],
                 "rule": rule,
                 "clauses": state["clauses"],
+                "contract_metadata": state.get("contract_metadata", {}),
             },
         )
         for rule in state["active_rules"]
@@ -47,13 +49,15 @@ def _build_graph() -> StateGraph:
 
     graph.add_node("classifier", classifier_node)
     graph.add_node("extractor", extractor_node)
+    graph.add_node("metadata_extractor", metadata_extractor_node)
     graph.add_node("check_rule", rule_checker_node)
     graph.add_node("scorer", scorer_node)
     graph.add_node("report_writer", report_writer_node)
 
     graph.add_edge(START, "classifier")
     graph.add_edge("classifier", "extractor")
-    graph.add_conditional_edges("extractor", _route_rule_checkers, ["check_rule"])
+    graph.add_edge("extractor", "metadata_extractor")
+    graph.add_conditional_edges("metadata_extractor", _route_rule_checkers, ["check_rule"])
     graph.add_edge("check_rule", "scorer")
     graph.add_edge("scorer", "report_writer")
     graph.add_edge("report_writer", END)
@@ -74,6 +78,7 @@ async def run_graph(job_id: str, raw_text: str, queue: asyncio.Queue, custom_rul
         "clauses": [],
         "custom_rules": custom_rules or [],
         "active_rules": [],
+        "contract_metadata": {},
         "rule_results": [],
         "overall_score": 0.0,
         "risk_level": "",

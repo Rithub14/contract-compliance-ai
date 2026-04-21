@@ -1,17 +1,18 @@
-import base64
 import io
+import logging
 import uuid
 
-import fitz  # PyMuPDF
+import fitz
 from fastapi import APIRouter, HTTPException, UploadFile, File
-from openai import AsyncOpenAI
-import pypdf
+from ocrmac import ocrmac
+from PIL import Image
 
 from app.api.job_store import job_store
 from app.api.models import UploadResponse
-from app.config.settings import settings
 from app.services.blob_service import BlobService
 from app.services.custom_rules_service import parse_compliance_doc
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 _blob = BlobService()
@@ -21,53 +22,36 @@ _ALLOWED_TYPES = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "text/plain",
 }
-_MAX_BYTES = 20 * 1024 * 1024  # 20 MB
-_MIN_TEXT_CHARS = 200  # below this, assume scanned PDF and use vision OCR
+_MAX_BYTES = 20 * 1024 * 1024
 _MAX_OCR_PAGES = 20
 
 
-async def _ocr_pdf_with_vision(content: bytes) -> str:
+def _ocr_pdf(content: bytes) -> str:
     doc = fitz.open(stream=content, filetype="pdf")
-    image_parts: list[dict] = []
+    pages_text = []
     for i, page in enumerate(doc):
         if i >= _MAX_OCR_PAGES:
             break
-        pix = page.get_pixmap(dpi=150)
-        b64 = base64.b64encode(pix.tobytes("png")).decode()
-        image_parts.append({
-            "type": "image_url",
-            "image_url": {"url": f"data:image/png;base64,{b64}", "detail": "auto"},
-        })
-
-    client = AsyncOpenAI(api_key=settings.openai_api_key, max_retries=6)
-    response = await client.chat.completions.create(
-        model=settings.openai_model,
-        messages=[{
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": (
-                        "Extract all text from these contract pages verbatim. "
-                        "Preserve paragraph breaks and section headings. "
-                        "Output only the extracted text, nothing else."
-                    ),
-                },
-                *image_parts,
-            ],
-        }],
-        max_tokens=8192,
-    )
-    return response.choices[0].message.content or ""
+        pix = page.get_pixmap(dpi=200)
+        img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+        annotations = ocrmac.OCR(img, language_preference=["de-DE", "en-US"]).recognize()
+        page_text = "\n".join(item[0] for item in annotations)
+        pages_text.append(page_text)
+        logger.debug("ocr page %d: %d chars", i + 1, len(page_text))
+    return "\n\n".join(pages_text)
 
 
 async def _extract_text(content: bytes, content_type: str) -> str:
     if content_type == "application/pdf":
-        reader = pypdf.PdfReader(io.BytesIO(content))
-        text = "\n\n".join(page.extract_text() or "" for page in reader.pages)
-        if len(text.strip()) < _MIN_TEXT_CHARS:
-            text = await _ocr_pdf_with_vision(content)
+        text = _ocr_pdf(content)
+        logger.info("ocr extracted %d chars", len(text))
         return text
+
+    if content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        from docx import Document
+        doc = Document(io.BytesIO(content))
+        return "\n\n".join(p.text for p in doc.paragraphs if p.text.strip())
+
     return content.decode(errors="replace")
 
 
