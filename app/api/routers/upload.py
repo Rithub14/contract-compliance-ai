@@ -1,10 +1,12 @@
 import io
 import logging
+import platform
 import uuid
 
 import fitz
+import numpy as np
+import pypdfium2 as pdfium
 from fastapi import APIRouter, HTTPException, UploadFile, File
-from ocrmac import ocrmac
 from PIL import Image
 
 from app.api.job_store import job_store
@@ -21,7 +23,15 @@ _ALLOWED_TYPES = {
     "text/plain",
 }
 _MAX_BYTES = 20 * 1024 * 1024
+_MIN_TEXT_CHARS = 200
 _MAX_OCR_PAGES = 20
+
+_IS_MACOS = platform.system() == "Darwin"
+
+
+def _extract_pdf_text_direct(content: bytes) -> str:
+    doc = pdfium.PdfDocument(content)
+    return "\n\n".join(page.get_textpage().get_text_range() for page in doc)
 
 
 def _ocr_pdf(content: bytes) -> str:
@@ -31,9 +41,17 @@ def _ocr_pdf(content: bytes) -> str:
         if i >= _MAX_OCR_PAGES:
             break
         pix = page.get_pixmap(dpi=200)
-        img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-        annotations = ocrmac.OCR(img, language_preference=["de-DE", "en-US"]).recognize()
-        page_text = "\n".join(item[0] for item in annotations)
+        if _IS_MACOS:
+            from ocrmac import ocrmac
+            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+            annotations = ocrmac.OCR(img, language_preference=["de-DE", "en-US"]).recognize()
+            page_text = "\n".join(item[0] for item in annotations)
+        else:
+            from rapidocr import RapidOCR
+            engine = RapidOCR()
+            img_array = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, 3)
+            result, _ = engine(img_array)
+            page_text = "\n".join(item[1] for item in result) if result else ""
         pages_text.append(page_text)
         logger.debug("ocr page %d: %d chars", i + 1, len(page_text))
     return "\n\n".join(pages_text)
@@ -41,6 +59,11 @@ def _ocr_pdf(content: bytes) -> str:
 
 async def _extract_text(content: bytes, content_type: str) -> str:
     if content_type == "application/pdf":
+        text = _extract_pdf_text_direct(content)
+        logger.info("pdfium extracted %d chars", len(text))
+        if len(text.strip()) >= _MIN_TEXT_CHARS:
+            return text
+        logger.info("text too short — running OCR")
         text = _ocr_pdf(content)
         logger.info("ocr extracted %d chars", len(text))
         return text
