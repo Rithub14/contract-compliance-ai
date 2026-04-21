@@ -33,7 +33,7 @@ employment:
       directive: "Mindestlohngesetz (MiLoG)"
       category: "MUST_BE_EXPLICIT"
       weight: 0.09
-      prompt: "Look for a stated salary or hourly rate in the contract text. If found, check whether it is below €12.82/hr (current Mindestlohn). If no salary is mentioned at all, return UNCERTAIN — do not FAIL. Only FAIL if a specific rate is stated and it is clearly below €12.82/hr."
+      prompt: "Look for a stated salary or hourly rate in the contract text. If found, check whether it is below €13.90/hr (current Mindestlohn from 1 January 2026). If no salary is mentioned at all, return UNCERTAIN — do not FAIL. Only FAIL if a specific rate is stated and it is clearly below €13.90/hr."
 
     - id: termination_notice
       name: "Kündigungsschutz & Kündigungsfristen"
@@ -112,7 +112,7 @@ employment:
       directive: "Mindestlohngesetz (MiLoG)"
       category: "MUST_BE_EXPLICIT"
       weight: 0.10
-      prompt: "Look for a stated hourly rate or salary in the contract. If found and below €12.82/hr, FAIL with the exact figure as evidence. If no rate is stated, return UNCERTAIN. Also check for Tarifvertrag references — sector-specific minimum wages may apply via AEntG."
+      prompt: "Look for a stated hourly rate or salary in the contract. If found and below €13.90/hr (current Mindestlohn from 1 January 2026), FAIL with the exact figure as evidence. If no rate is stated, return UNCERTAIN. Also check for Tarifvertrag references — sector-specific minimum wages may apply via AEntG."
 
     - id: termination_notice
       name: "Kündigungsschutz & Kündigungsfristen"
