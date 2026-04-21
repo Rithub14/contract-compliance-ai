@@ -2,18 +2,17 @@
 
 Upload an employment or vendor contract and get a clause-by-clause compliance report against major EU directives — streamed live as each rule is checked.
 
-Built as a GenAI/MLOps portfolio project. Everything runs locally with mocks; swapping in real Azure services only requires setting the env vars.
-
 ---
 
 ## What it does
 
 - Detects contract type automatically (vendor, white-collar employment, blue-collar employment)
+- Extracts contract metadata (salary, working hours, vacation days, data protection clauses) to ground rule evaluations in actual contract facts
 - Checks against the relevant EU directives — 22 rules covering GDPR, Working Time, NIS2, AI Act, CSDDD, and more
 - Streams results in real time as each rule finishes (SSE)
-- Optionally upload your own compliance rules file (PDF or YAML) — the app uses semantic search to match clauses instead of the default EU ruleset
-- Each finding is evaluated by an LLM-as-a-judge layer that scores accuracy, completeness, and false-positive risk
-- Full trace logged to Langfuse (stub by default, live with keys)
+- Each finding includes a verbatim excerpt, a justification type, and a severity rating
+- An LLM-as-a-judge layer evaluates each finding for accuracy, completeness, and false-positive risk
+- Optionally upload your own compliance rules file (PDF, TXT, or YAML) — matched via semantic embeddings instead of the default EU ruleset
 
 ---
 
@@ -22,26 +21,19 @@ Built as a GenAI/MLOps portfolio project. Everything runs locally with mocks; sw
 | Layer | Technology |
 |---|---|
 | Agent pipeline | LangGraph 0.2 (StateGraph + Send API for parallel fan-out) |
+| LLM | OpenAI gpt-4o-mini |
 | API | FastAPI + sse-starlette (SSE streaming) |
 | UI | Streamlit |
-| Semantic matching | sentence-transformers `all-MiniLM-L6-v2` |
-| Document extraction | pypdf (mock Azure Document Intelligence) |
-| Observability | Langfuse tracing + Azure App Insights (stubs) |
-| Infra (planned) | Azure Container Apps, ACR, Key Vault via Terraform |
-
----
-
-## Deployment
-
-The app is deployed on **Render** (live demo via `render.yaml`). Both the API and UI are separate web services that Render builds from the Dockerfiles and redeploys automatically on every push to `main`.
-
-For production-grade deployment, the `infra/` directory contains full **Terraform** configs that provision the same setup on **Azure Container Apps** — ACR, Storage Account, Key Vault, Log Analytics, and both container apps. The GitHub Actions workflow at `.github/workflows/cd.yml` handles building, pushing to ACR, and deploying to Container Apps. That pipeline is set to manual trigger since Render handles the live demo, but it's ready to run against a real Azure subscription.
+| OCR | Apple Vision via ocrmac + PyMuPDF (local, supports German) |
+| Document parsing | Regex clause splitter (§-based + paragraph fallback) |
+| Semantic matching | fastembed BAAI/bge-small-en-v1.5 (custom rules only) |
+| Deployment | Render (render.yaml) |
 
 ---
 
 ## Running locally
 
-**Requirements:** Python 3.11, Docker (optional)
+**Requirements:** Python 3.11+, macOS (Apple Vision OCR), Docker (optional)
 
 ```bash
 git clone https://github.com/Rithub14/contract-compliance-ai.git
@@ -50,12 +42,12 @@ cd contract-compliance-ai
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-cp .env.example .env          # leave USE_MOCKS=true for local dev
+cp .env.example .env   # add your OPENAI_API_KEY
 ```
 
 Start the API:
 ```bash
-uvicorn app.api.main:app --reload --port 8000
+uvicorn app.api.main:app --reload --reload-dir app --port 8000
 ```
 
 Start the UI (separate terminal):
@@ -74,12 +66,12 @@ Then open `http://localhost:8501`.
 
 ## Custom compliance rules
 
-Instead of the built-in EU ruleset, you can upload your own compliance file (PDF or TXT). Supported formats:
+Instead of the built-in EU ruleset, upload your own compliance file (PDF or TXT). Supported formats:
 
-- **YAML with a `rules:` block** — each key becomes a named rule (see `samples/` for an example structure)
-- **Free text** — the app splits on Article/Section/numbered headings, or falls back to paragraphs
+- **YAML with a `rules:` block** — each key becomes a named rule
+- **Free text** — split on Article/Section/numbered headings, or paragraphs as fallback
 
-Clause matching uses `all-MiniLM-L6-v2` embeddings and cosine similarity. The model downloads once (~90 MB) on first use.
+Clause matching uses fastembed `BAAI/bge-small-en-v1.5` embeddings and cosine similarity. The model downloads once (~130 MB) on first use.
 
 ---
 
@@ -87,13 +79,12 @@ Clause matching uses `all-MiniLM-L6-v2` embeddings and cosine similarity. The mo
 
 ```
 app/
-  agents/          # LangGraph nodes (classifier, extractor, rule_checker, scorer, report_writer)
-  api/             # FastAPI app, routers, job store
+  agents/          # LangGraph nodes: classifier, extractor, metadata_extractor,
+                   #   rule_checker, scorer, report_writer
+  api/             # FastAPI app, routers, in-memory job store
   config/          # Pydantic settings, rules.yaml
-  observability/   # Langfuse tracer, App Insights stub
-  services/        # Mock services (blob, doc intel, openai, judge, custom rules)
+  services/        # OpenAI service, judge service, doc intel, custom rules parser
   ui/              # Streamlit frontend
-infra/             # Terraform modules (WIP)
 docker/            # Dockerfiles for API and UI
 tests/
 ```
@@ -102,7 +93,6 @@ tests/
 
 ## EU directives covered
 
-**Employment (white & blue collar):** Transparent & Predictable Working Conditions (2019/1152), Working Time (2003/88/EC), GDPR employee data, Equal Treatment (2000/78/EC), Minimum Wage (2022/2041), Collective Redundancy (98/59/EC), Posted Workers, Work-Life Balance (2019/1158), Whistleblower Protection (2019/1937), Race Equality (2000/43/EC), Fixed-Term Work (1999/70/EC)
+**Employment (white & blue collar):** Transparent & Predictable Working Conditions (2019/1152), Working Time (2003/88/EC), GDPR employee data (DSGVO + BDSG), Equal Treatment (AGG / 2000/78/EC), Minimum Wage (MiLoG / 2022/2041), Termination Notice (KSchG + BGB §622), Posted Workers (AEntG), Work-Life Balance (BEEG + MuSchG), Whistleblower Protection (HinSchG / 2019/1937), Race Equality (AGG §§1,7,11), Fixed-Term & Part-Time (TzBfG)
 
-**Vendor:** Late Payment (2011/7/EU), GDPR DPA (Article 28), NIS2 (2022/2555), Product Liability, CSDDD supply chain due diligence (2024/1760), EU AI Act (2024/1689), Cyber Resilience Act, Data Act (2023/2854), Digital Services Act, Commercial Agents Directive
-
+**Vendor:** Late Payment (BGB §§286–288), GDPR DPA (Art. 28), NIS2 / IT-Sicherheitsgesetz 2.0, Product Liability (ProdHaftG), CSDDD supply chain due diligence (LkSG / 2024/1760), EU AI Act (2024/1689), Cyber Resilience Act, Data Act (2023/2854), Digital Services Act (DDG), Commercial Agents (HGB §§84–92c)
