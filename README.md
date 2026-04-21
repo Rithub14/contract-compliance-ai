@@ -1,6 +1,6 @@
-# EU Contract Compliance Checker
+# German Contract Compliance Checker
 
-Upload an employment or vendor contract and get a clause-by-clause compliance report against major EU directives — streamed live as each rule is checked.
+Upload an employment or vendor contract and get a clause-by-clause compliance report against German law — streamed live as each rule is checked.
 
 ---
 
@@ -8,11 +8,11 @@ Upload an employment or vendor contract and get a clause-by-clause compliance re
 
 - Detects contract type automatically (vendor, white-collar employment, blue-collar employment)
 - Extracts contract metadata (salary, working hours, vacation days, data protection clauses) to ground rule evaluations in actual contract facts
-- Checks against the relevant EU directives — 22 rules covering GDPR, Working Time, NIS2, AI Act, CSDDD, and more
+- Checks against German statutory requirements — 22 rules covering NachwG, ArbZG, MiLoG, KSchG, BDSG, HinSchG, NIS2, AI Act, and more
 - Streams results in real time as each rule finishes (SSE)
 - Each finding includes a verbatim excerpt, a justification type, and a severity rating
 - An LLM-as-a-judge layer evaluates each finding for accuracy, completeness, and false-positive risk
-- Optionally upload your own compliance rules file (PDF, TXT, or YAML) — matched via semantic embeddings instead of the default EU ruleset
+- Optionally upload your own compliance rules file (PDF, TXT, or YAML) — matched via semantic embeddings instead of the default German ruleset
 
 ---
 
@@ -91,8 +91,8 @@ tests/
 
 ---
 
-## EU directives covered
+## Rules covered
 
-**Employment (white & blue collar):** Transparent & Predictable Working Conditions (2019/1152), Working Time (2003/88/EC), GDPR employee data (DSGVO + BDSG), Equal Treatment (AGG / 2000/78/EC), Minimum Wage (MiLoG / 2022/2041), Termination Notice (KSchG + BGB §622), Posted Workers (AEntG), Work-Life Balance (BEEG + MuSchG), Whistleblower Protection (HinSchG / 2019/1937), Race Equality (AGG §§1,7,11), Fixed-Term & Part-Time (TzBfG)
+**Employment (white & blue collar):** Nachweisgesetz (NachwG), Arbeitszeitgesetz + BUrlG, DSGVO + BDSG, AGG, Mindestlohngesetz (MiLoG), KSchG + BGB §622, Arbeitnehmer-Entsendegesetz (AEntG), BEEG + MuSchG, Hinweisgeberschutzgesetz (HinSchG), AGG §§1,7,11, Teilzeit- und Befristungsgesetz (TzBfG)
 
-**Vendor:** Late Payment (BGB §§286–288), GDPR DPA (Art. 28), NIS2 / IT-Sicherheitsgesetz 2.0, Product Liability (ProdHaftG), CSDDD supply chain due diligence (LkSG / 2024/1760), EU AI Act (2024/1689), Cyber Resilience Act, Data Act (2023/2854), Digital Services Act (DDG), Commercial Agents (HGB §§84–92c)
+**Vendor:** BGB §§286–288 (late payment), DSGVO Art. 28 (DPA), BSI-Gesetz / IT-SiG 2.0 (NIS2), Produkthaftungsgesetz, Lieferkettensorgfaltspflichtengesetz (LkSG), EU AI Act (2024/1689), Cyber Resilience Act, EU Data Act (2023/2854), DDG + NetzDG (DSA), HGB §§84–92c (commercial agents)
