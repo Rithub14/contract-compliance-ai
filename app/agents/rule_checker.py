@@ -10,14 +10,65 @@ from app.observability.langfuse_tracer import tracer
 _openai = OpenAIService()
 
 
+_STATUTORY_CATEGORIES = {"STATUTORY", "ORGANISATIONAL"}
+
+
+def _enforce_evidence_rule(result: dict, rule: dict) -> dict:
+    if result.get("is_system_error"):
+        return result
+
+    excerpt = result.get("excerpt", "N/A").strip()
+    no_excerpt = excerpt in ("N/A", "", "n/a")
+    status = result.get("status")
+    category = (rule.get("category") or "").upper()
+    justification = (result.get("justification_type") or "").lower()
+
+    if no_excerpt and status == "FAIL":
+        result["status"] = "UNCERTAIN"
+        result["severity"] = "Low"
+        result["finding"] = (
+            "[Downgraded from FAIL — no supporting excerpt found] " + result.get("finding", "")
+        )
+        result["recommendation"] = (
+            "Manual review recommended: no specific contract text was identified to support this finding. "
+            + result.get("recommendation", "")
+        )
+        result["justification_type"] = "none"
+        return result
+
+    if no_excerpt and status == "PASS" and category not in _STATUTORY_CATEGORIES and justification != "statutory":
+        result["status"] = "UNCERTAIN"
+        result["severity"] = "Low"
+        result["finding"] = (
+            "[Downgraded from PASS — no supporting excerpt and rule is not statutory] "
+            + result.get("finding", "")
+        )
+        result["recommendation"] = (
+            "Manual review recommended: PASS was claimed without a verbatim excerpt or statutory justification. "
+            + result.get("recommendation", "")
+        )
+        result["justification_type"] = "none"
+
+    return result
+
+
 async def rule_checker_node(state: dict, config: RunnableConfig) -> dict:
     rule: dict = state["rule"]
     clauses: list[dict] = state.get("clauses", [])
     cfg = config.get("configurable", {})
 
+    metadata: dict = state.get("contract_metadata", {})
+
     t0 = time.monotonic()
-    result = await _openai.check_rule(rule, clauses)
+    result = await _openai.check_rule(rule, clauses, metadata=metadata)
+    result = _enforce_evidence_rule(result, rule)
     latency_ms = (time.monotonic() - t0) * 1000
+
+    if result.get("is_system_error"):
+        queue: asyncio.Queue | None = cfg.get("queue")
+        if queue is not None:
+            await queue.put({"type": "rule_result", "data": result})
+        return {"rule_results": [result]}
 
     evaluation = await judge_evaluate(rule, result)
     result["evaluation"] = evaluation
@@ -37,7 +88,7 @@ async def rule_checker_node(state: dict, config: RunnableConfig) -> dict:
     tracer.score(trace_id, f"accuracy.{rule['id']}", evaluation["accuracy_score"])
     tracer.score(trace_id, f"completeness.{rule['id']}", evaluation["completeness_score"])
 
-    queue: asyncio.Queue | None = cfg.get("queue")
+    queue = cfg.get("queue")
     if queue is not None:
         await queue.put({"type": "rule_result", "data": result})
 

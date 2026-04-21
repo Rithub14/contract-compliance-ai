@@ -1,200 +1,228 @@
 employment:
   white_collar:
-    # ── Core directives ───────────────────────────────────────────────────────
     - id: transparent_terms
-      name: "Transparent & Predictable Working Conditions"
-      directive: "EU 2019/1152"
+      name: "Nachweis- & Vertragspflichten"
+      directive: "Nachweisgesetz (NachwG)"
+      category: "MUST_BE_EXPLICIT"
       weight: 0.10
-      prompt: "Check probation ≤6 months, written statement of all required terms."
+      prompt: "Check whether the contract contains a written statement of required terms (job title, start date, place of work, remuneration, working hours). Also check if probation period is stated and does not exceed 6 months per BGB §622. These terms MUST appear explicitly in the contract."
 
     - id: working_time
-      name: "Working Time Directive"
-      directive: "2003/88/EC"
+      name: "Arbeitszeitgesetz"
+      directive: "ArbZG + BUrlG"
+      category: "MUST_BE_EXPLICIT"
       weight: 0.13
-      prompt: "Check max 48hr week, 11hr daily rest, 24hr weekly rest, 4 weeks annual leave."
+      prompt: "Check working time and annual leave. PASS if the contract states either (a) weekly OR monthly working hours AND (b) annual leave days — daily hours do NOT need to be stated. Use the pre-extracted working_hours and vacation_days facts from the Contract context block if present (reuse their excerpts verbatim; combine both into your excerpt). FAIL only if stated daily hours exceed 8 without an averaging clause, or leave is explicitly below BUrlG minimum (20 days on 5-day week / 24 on 6-day week). UNCERTAIN only if neither hours nor leave are stated anywhere."
 
     - id: gdpr_employee
-      name: "Employee Data Protection (GDPR)"
-      directive: "EU 2016/679"
+      name: "Arbeitnehmerdatenschutz"
+      directive: "DSGVO + BDSG"
+      category: "CAN_BE_IMPLICIT"
       weight: 0.12
-      prompt: "Check lawful basis, data subject rights, retention limits, monitoring disclosure."
+      prompt: "Check whether the contract addresses employee data processing. If the Contract context block shows data_protection_clause_present=true, reuse its excerpt verbatim and PASS. Otherwise PASS is still valid if the contract references DSGVO, BDSG, a privacy policy, or a Betriebsvereinbarung — quote the reference as excerpt. FAIL only if an unlawful processing clause is present (e.g. blanket surveillance consent). If neither an explicit clause nor a reference exists, treat as CAN_BE_IMPLICIT PASS with justification_type=statutory and cite §26 BDSG — do NOT claim the clause is missing when the metadata block shows one."
 
     - id: equal_treatment
-      name: "Equal Treatment Framework"
-      directive: "2000/78/EC"
+      name: "Allgemeines Gleichbehandlungsgesetz"
+      directive: "AGG"
+      category: "STATUTORY"
       weight: 0.09
-      prompt: "Check non-discrimination on religion, disability, age, sexual orientation."
+      prompt: "The AGG applies by statute regardless of contract wording. PASS unless the contract contains a clause that ACTIVELY discriminates on religion, disability, age, or sexual orientation per §§1,7 AGG. Absence of a non-discrimination clause is NOT a failure."
 
     - id: minimum_wage
-      name: "Adequate Minimum Wage"
-      directive: "EU 2022/2041"
+      name: "Mindestlohn"
+      directive: "Mindestlohngesetz (MiLoG)"
+      category: "MUST_BE_EXPLICIT"
       weight: 0.09
-      prompt: "Flag if salary appears below applicable national minimum wage threshold."
+      prompt: "Look for a stated salary or hourly rate in the contract text. If found, check whether it is below €12.82/hr (current Mindestlohn). If no salary is mentioned at all, return UNCERTAIN — do not FAIL. Only FAIL if a specific rate is stated and it is clearly below €12.82/hr."
 
     - id: termination_notice
-      name: "Collective Redundancy & Notice Periods"
-      directive: "98/59/EC"
+      name: "Kündigungsschutz & Kündigungsfristen"
+      directive: "KSchG + BGB §622"
+      category: "CAN_BE_IMPLICIT"
       weight: 0.09
-      prompt: "Check notice period, severance terms, consultation obligations."
+      prompt: "Check if termination notice periods are addressed. This is satisfied by: (a) an explicit notice period clause, (b) a reference to BGB §622, or (c) a Tarifvertrag reference. FAIL only if the contract specifies a notice period SHORTER than BGB §622 minimum (4 weeks to 15th or end of month). Absence means statutory BGB §622 applies — that is CAN_BE_IMPLICIT PASS."
 
-    # ── Additional major directives ───────────────────────────────────────────
     - id: posted_workers
-      name: "Posted Workers"
-      directive: "96/71/EC"
+      name: "Arbeitnehmerentsendung"
+      directive: "Arbeitnehmer-Entsendegesetz (AEntG)"
+      category: "CONDITIONAL"
       weight: 0.07
-      prompt: "Check host-country minimum conditions for any cross-border posting arrangement."
+      prompt: "This rule applies ONLY if the contract mentions cross-border work, posting to another country, or international assignments. If no such context exists in the contract text, return NOT_APPLICABLE. If cross-border posting is mentioned, check that host-country minimum conditions and AEntG registration obligations are addressed."
 
     - id: work_life_balance
-      name: "Work-Life Balance (Parental & Paternity Leave)"
-      directive: "EU 2019/1158"
+      name: "Elternzeit & Mutterschutz"
+      directive: "BEEG + MuSchG"
+      category: "STATUTORY"
       weight: 0.09
-      prompt: "Check paternity leave ≥10 days, parental leave 4 months, carer's leave 5 days/year."
+      prompt: "Elternzeit (BEEG §15) and Mutterschutz (MuSchG) are statutory rights that apply regardless of contract wording. PASS unless the contract contains a clause that ACTIVELY restricts or waives these rights (which would be void anyway). A contract does not need to mention parental leave to be compliant."
 
     - id: whistleblower
-      name: "Whistleblower Protection"
-      directive: "EU 2019/1937"
+      name: "Hinweisgeberschutz"
+      directive: "Hinweisgeberschutzgesetz (HinSchG)"
+      category: "ORGANISATIONAL"
       weight: 0.07
-      prompt: "Check internal reporting channel and anti-retaliation clause for orgs >50 employees."
+      prompt: "The HinSchG obligation to maintain a reporting channel is an ORGANISATIONAL requirement, not a contract clause obligation. PASS unless the contract contains an anti-whistleblower clause or a confidentiality clause so broad it would prevent protected disclosures per HinSchG. Absence of a whistleblower clause in a contract is NOT a failure."
 
     - id: race_equality
-      name: "Race Equality"
-      directive: "2000/43/EC"
+      name: "Diskriminierungsverbot (Rasse & Herkunft)"
+      directive: "AGG §§1,7,11"
+      category: "STATUTORY"
       weight: 0.08
-      prompt: "Check non-discrimination clause explicitly covers race and ethnic origin."
+      prompt: "AGG §1 applies by statute. PASS unless the contract contains a clause that ACTIVELY discriminates based on race or ethnic origin. Absence of an explicit non-discrimination clause is NOT a failure."
 
     - id: fixed_term
-      name: "Fixed-Term & Part-Time Work"
-      directive: "1999/70/EC & 97/81/EC"
+      name: "Befristung & Teilzeit"
+      directive: "Teilzeit- und Befristungsgesetz (TzBfG)"
+      category: "CONDITIONAL"
       weight: 0.07
-      prompt: "Check objective justification for fixed-term; pro-rata principle for part-time."
+      prompt: "This rule applies ONLY if the contract is fixed-term (contains an end date or Befristung clause). If the contract appears to be permanent/open-ended, return NOT_APPLICABLE. If fixed-term: check for a stated Sachgrund per TzBfG §14, or confirm sachgrundlose Befristung does not exceed 2 years. If part-time: check pro-rata treatment per TzBfG §4."
 
   blue_collar:
     - id: transparent_terms
-      name: "Transparent & Predictable Working Conditions"
-      directive: "EU 2019/1152"
+      name: "Nachweis- & Vertragspflichten"
+      directive: "Nachweisgesetz (NachwG)"
+      category: "MUST_BE_EXPLICIT"
       weight: 0.09
-      prompt: "Check probation ≤6 months, advance schedule notice for shift workers."
+      prompt: "Check whether the contract contains required terms: job title, start date, place of work, remuneration, working hours, shift schedule. For shift workers, advance schedule notice obligations apply per NachwG. These MUST appear explicitly."
 
     - id: working_time
-      name: "Working Time Directive (Shift / Manual Worker)"
-      directive: "2003/88/EC"
+      name: "Arbeitszeitgesetz (Schicht / Gewerbliche Arbeitnehmer)"
+      directive: "ArbZG + BUrlG"
+      category: "MUST_BE_EXPLICIT"
+      collar_note: "Stricter rest period enforcement for shift and manual workers."
       weight: 0.15
-      collar_note: "Stricter rest period rules for shift and manual workers."
-      prompt: "Check 48hr weekly cap, 11hr daily rest, 24hr weekly rest, shift scheduling conflicts."
+      prompt: "Check working time and annual leave. PASS if the contract states weekly OR monthly hours AND annual leave days — reuse working_hours and vacation_days excerpts from the Contract context block verbatim when present. Do not require daily hours. FAIL only for explicit violations: daily hours >8 without an averaging clause, shifts >10hr with no averaging, missing 11hr daily rest when schedule specifics allow verification, or leave below BUrlG minimum (20 days / 24 on 6-day week). For shift workers, flag absence of night-work supplement obligations (ArbZG §6) as WARNING not FAIL. UNCERTAIN only if neither hours nor leave are stated."
 
     - id: gdpr_employee
-      name: "Employee Data Protection (GDPR)"
-      directive: "EU 2016/679"
+      name: "Arbeitnehmerdatenschutz"
+      directive: "DSGVO + BDSG"
+      category: "CAN_BE_IMPLICIT"
       weight: 0.11
-      prompt: "Check lawful basis, data subject rights, retention limits, monitoring disclosure."
+      prompt: "Check whether the contract addresses employee data processing. If the Contract context block shows data_protection_clause_present=true, reuse its excerpt verbatim and PASS. Otherwise PASS if the contract references DSGVO, BDSG, a Betriebsvereinbarung, or a privacy policy — quote the reference. FAIL only if an unlawful processing clause is present. If neither an explicit clause nor a reference exists, treat as CAN_BE_IMPLICIT PASS with justification_type=statutory citing §26 BDSG — do NOT claim the clause is missing when metadata shows one."
 
     - id: equal_treatment
-      name: "Equal Treatment Framework"
-      directive: "2000/78/EC"
+      name: "Allgemeines Gleichbehandlungsgesetz"
+      directive: "AGG"
+      category: "STATUTORY"
       weight: 0.08
-      prompt: "Check non-discrimination on religion, disability, age, sexual orientation."
+      prompt: "AGG applies by statute. PASS unless the contract ACTIVELY discriminates on religion, disability, age, or sexual orientation. Absence of a non-discrimination clause is NOT a failure."
 
     - id: minimum_wage
-      name: "Adequate Minimum Wage"
-      directive: "EU 2022/2041"
+      name: "Mindestlohn"
+      directive: "Mindestlohngesetz (MiLoG)"
+      category: "MUST_BE_EXPLICIT"
       weight: 0.10
-      prompt: "Flag if hourly rate or salary appears below applicable national minimum wage."
+      prompt: "Look for a stated hourly rate or salary in the contract. If found and below €12.82/hr, FAIL with the exact figure as evidence. If no rate is stated, return UNCERTAIN. Also check for Tarifvertrag references — sector-specific minimum wages may apply via AEntG."
 
     - id: termination_notice
-      name: "Collective Redundancy & Notice Periods"
-      directive: "98/59/EC"
+      name: "Kündigungsschutz & Kündigungsfristen"
+      directive: "KSchG + BGB §622"
+      category: "CAN_BE_IMPLICIT"
       weight: 0.08
-      prompt: "Check notice period, severance terms, consultation obligations."
+      prompt: "Check if termination notice is addressed. Satisfied by an explicit clause, BGB §622 reference, or Tarifvertrag reference. FAIL only if a specific period shorter than BGB §622 minimum is stated. Absence means BGB §622 applies by statute — CAN_BE_IMPLICIT PASS."
 
     - id: posted_workers
-      name: "Posted Workers"
-      directive: "96/71/EC"
+      name: "Arbeitnehmerentsendung"
+      directive: "Arbeitnehmer-Entsendegesetz (AEntG)"
+      category: "CONDITIONAL"
       weight: 0.08
-      prompt: "Check host-country minimum conditions for cross-border posting."
+      prompt: "Apply ONLY if the contract mentions cross-border posting or international work. If no such context exists, return NOT_APPLICABLE. If applicable, check host-country minimum conditions and sectoral minimum wages under AEntG."
 
     - id: work_life_balance
-      name: "Work-Life Balance (Parental & Paternity Leave)"
-      directive: "EU 2019/1158"
+      name: "Elternzeit & Mutterschutz"
+      directive: "BEEG + MuSchG"
+      category: "STATUTORY"
       weight: 0.10
-      prompt: "Check paternity leave ≥10 days, parental leave 4 months, carer's leave."
+      prompt: "BEEG and MuSchG are statutory rights. PASS unless the contract ACTIVELY restricts parental leave or maternity protection. Absence of a mention is NOT a failure."
 
     - id: whistleblower
-      name: "Whistleblower Protection"
-      directive: "EU 2019/1937"
+      name: "Hinweisgeberschutz"
+      directive: "Hinweisgeberschutzgesetz (HinSchG)"
+      category: "ORGANISATIONAL"
       weight: 0.07
-      prompt: "Check internal reporting channel and anti-retaliation clause."
+      prompt: "HinSchG is an organisational obligation, not a contract clause requirement. PASS unless the contract contains a clause that would prevent protected disclosures. Absence of a whistleblower clause is NOT a failure."
 
     - id: race_equality
-      name: "Race Equality"
-      directive: "2000/43/EC"
+      name: "Diskriminierungsverbot (Rasse & Herkunft)"
+      directive: "AGG §§1,7,11"
+      category: "STATUTORY"
       weight: 0.08
-      prompt: "Check non-discrimination clause explicitly covers race and ethnic origin."
+      prompt: "AGG applies by statute. PASS unless the contract ACTIVELY discriminates based on race or ethnic origin. Absence of an explicit clause is NOT a failure."
 
     - id: fixed_term
-      name: "Fixed-Term & Part-Time Work"
-      directive: "1999/70/EC & 97/81/EC"
+      name: "Befristung & Teilzeit"
+      directive: "Teilzeit- und Befristungsgesetz (TzBfG)"
+      category: "CONDITIONAL"
       weight: 0.06
-      prompt: "Check objective justification for fixed-term; pro-rata principle for part-time."
+      prompt: "Apply ONLY if the contract is fixed-term (contains an end date or Befristung). If open-ended, return NOT_APPLICABLE. If fixed-term: check for Sachgrund per TzBfG §14 or confirm sachgrundlose Befristung ≤2 years. If part-time: check pro-rata treatment per TzBfG §4."
 
 vendor:
-  # ── Core directives ─────────────────────────────────────────────────────────
   - id: late_payment
-    name: "Late Payment Directive"
-    directive: "2011/7/EU"
+    name: "Zahlungsverzug"
+    directive: "BGB §§286–288 + HGB §353"
+    category: "CAN_BE_IMPLICIT"
     weight: 0.12
-    prompt: "Check payment terms ≤30 days (public) / ≤60 days (commercial), statutory interest."
+    prompt: "Check payment terms in the contract. If stated, verify they do not exceed 30 days (public bodies) or 60 days (commercial) per BGB §286. FAIL only if payment terms explicitly exceed these limits. If no payment terms are stated, statutory BGB §286 applies — return CAN_BE_IMPLICIT PASS or UNCERTAIN if ambiguous."
 
   - id: gdpr_vendor
-    name: "GDPR — Data Processing Agreement"
-    directive: "EU 2016/679"
+    name: "Auftragsverarbeitung (DSGVO)"
+    directive: "DSGVO Art. 28 + BDSG"
+    category: "CONDITIONAL"
     weight: 0.16
-    prompt: "Check DPA, sub-processor controls, SCCs, data subject rights per Article 28."
+    prompt: "Apply ONLY if the vendor contract involves processing personal data on behalf of the controller. Look for data processing activities, personal data mentions, or system access. If no personal data processing is involved, return NOT_APPLICABLE. If applicable, check for an Auftragsverarbeitungsvertrag (AVV) or Art. 28 clauses — FAIL if personal data processing is evident but no DPA provisions exist."
 
   - id: nis2
-    name: "Cybersecurity Obligations (NIS2)"
-    directive: "EU 2022/2555"
+    name: "IT-Sicherheit & Meldepflichten"
+    directive: "BSI-Gesetz (BSIG) / IT-Sicherheitsgesetz 2.0"
+    category: "CONDITIONAL"
     weight: 0.12
-    prompt: "Check cybersecurity measures, 72-hour incident reporting timeline."
+    prompt: "Apply ONLY if the contract involves IT services, critical infrastructure, or digital systems. If purely a goods/non-IT services contract, return NOT_APPLICABLE. If applicable, check for cybersecurity obligations and 72-hour incident reporting per BSIG."
 
   - id: product_liability
-    name: "Product Liability"
-    directive: "85/374/EEC"
+    name: "Produkthaftung"
+    directive: "Produkthaftungsgesetz (ProdHaftG)"
+    category: "CONDITIONAL"
     weight: 0.10
-    prompt: "Check liability cap, defect definitions, misconduct carve-outs per 2024 update."
+    prompt: "Apply ONLY if the contract involves physical products or manufactured goods. If purely a services contract, return NOT_APPLICABLE. If applicable, check liability clauses against ProdHaftG — FAIL if the contract attempts to exclude liability beyond what ProdHaftG permits."
 
   - id: csddd
-    name: "Supply Chain Due Diligence (CSDDD)"
-    directive: "EU 2024/1760"
+    name: "Lieferkettensorgfaltspflichten"
+    directive: "Lieferkettensorgfaltspflichtengesetz (LkSG)"
+    category: "CONDITIONAL"
     weight: 0.13
-    prompt: "Check human rights and environmental due diligence, audit rights, remediation."
+    prompt: "LkSG applies to companies with ≥1000 employees in Germany. Apply ONLY if the contract involves supply chain relationships (manufacturing, sourcing, production). If it is a simple services contract with no supply chain element, return NOT_APPLICABLE. If applicable, check for human rights and environmental due diligence obligations."
 
-  # ── Additional major directives ─────────────────────────────────────────────
   - id: ai_act
-    name: "EU AI Act"
-    directive: "EU 2024/1689"
+    name: "KI-Verordnung"
+    directive: "EU-KI-Verordnung (EU 2024/1689)"
+    category: "CONDITIONAL"
     weight: 0.12
-    prompt: "Check AI risk classification, transparency obligations, human oversight, prohibited practices."
+    prompt: "Apply ONLY if the contract involves AI systems, AI-powered products, or AI services. If no AI component is evident, return NOT_APPLICABLE. If applicable, check for AI risk classification, transparency obligations, and human oversight provisions per EU 2024/1689."
 
   - id: cyber_resilience
-    name: "Cyber Resilience Act"
-    directive: "EU 2024/2847"
+    name: "Cyber Resilience"
+    directive: "BSI-Gesetz + CRA (EU 2024/2847)"
+    category: "CONDITIONAL"
     weight: 0.08
-    prompt: "Check security update lifecycle, vulnerability disclosure for products with digital elements."
+    prompt: "Apply ONLY if the contract involves products with digital elements (software, connected devices, IoT). If purely a services or non-digital contract, return NOT_APPLICABLE. If applicable, check security update lifecycle and vulnerability disclosure obligations."
 
   - id: data_act
-    name: "Data Act"
-    directive: "EU 2023/2854"
+    name: "EU-Datengesetz"
+    directive: "EU-Datengesetz (EU 2023/2854)"
+    category: "CONDITIONAL"
     weight: 0.07
-    prompt: "Check data portability, access rights, cloud switching provisions."
+    prompt: "Apply ONLY if the contract involves connected products, IoT devices, or data sharing services. If not applicable to the contract scope, return NOT_APPLICABLE. If applicable, check data portability, access rights, and cloud switching provisions."
 
   - id: dsa
-    name: "Digital Services Act"
-    directive: "EU 2022/2065"
+    name: "Digitale-Dienste-Gesetz"
+    directive: "DDG + NetzDG"
+    category: "CONDITIONAL"
     weight: 0.06
-    prompt: "Check content moderation, transparency, and user rights for intermediary services."
+    prompt: "Apply ONLY if the contract involves intermediary services, online platforms, or content hosting. If not applicable, return NOT_APPLICABLE. If applicable, check content moderation obligations and user rights per DDG and NetzDG."
 
   - id: commercial_agents
-    name: "Commercial Agents Directive"
-    directive: "86/653/EEC"
+    name: "Handelsvertreter"
+    directive: "HGB §§84–92c"
+    category: "CONDITIONAL"
     weight: 0.04
-    prompt: "Check agent commission rights and termination indemnity/goodwill compensation."
+    prompt: "Apply ONLY if the contract involves a commercial agent relationship (Handelsvertreter) — an independent person negotiating deals on behalf of another. If this is an employment or standard services contract, return NOT_APPLICABLE. If applicable, check commission rights and termination indemnity per HGB §89b."
